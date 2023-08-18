@@ -3,6 +3,7 @@ package com.example.pixelapi.ui.adapter
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import coil.load
@@ -26,9 +27,15 @@ class PhotoListAdapter(val context:Context, val photos:List<Photo>,val onClick:(
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         val photo = photos[position]
-        holder.ivPhoto.load(photo.src.portrait)
+        if(photo.selected){
+            holder.ivPhoto.load(photo.src.portrait)
+        }else{
+            holder.ivPhoto.load("https://images.pexels.com/photos/2310713/pexels-photo-2310713.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1")
+        }
         holder.itemView.setOnClickListener {
             onClick(photo)
+
+
         }
     }
 }

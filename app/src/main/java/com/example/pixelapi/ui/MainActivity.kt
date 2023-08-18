@@ -7,12 +7,10 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.pixelapi.R
-import com.example.pixelapi.data.api.model.Photo
 import com.example.pixelapi.data.state.PhotoListState
 import com.example.pixelapi.databinding.ActivityMainBinding
+import com.example.pixelapi.ui.adapter.AdapterState
 import com.example.pixelapi.ui.adapter.PhotoListAdapter
-import com.example.pixelapi.ui.photoDetail.PhotoDetailFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -22,6 +20,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
+    private lateinit var adapter:PhotoListAdapter
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,7 +30,30 @@ class MainActivity : AppCompatActivity() {
 
         listeners()
         observePhotoListState()
+        observeAdapterState()
 
+    }
+
+    private fun observeAdapterState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.CREATED){
+                viewModel.adapterState.collect{
+                    when(it){
+                        is AdapterState.Changed -> {
+                            adapter.notifyItemChanged(it.index)
+                        }
+                        AdapterState.Idle -> {}
+                        is AdapterState.Removed -> {
+                            adapter.notifyDataSetChanged()
+                        }
+                        is AdapterState.ChangedAll -> {
+                            adapter.notifyItemChanged(it.index1)
+                            adapter.notifyItemChanged(it.index2)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun listeners() {
@@ -58,7 +81,11 @@ class MainActivity : AppCompatActivity() {
                         }
                         is PhotoListState.Result ->{
                             binding.progressBar.isVisible = false
-                            binding.rvPhotos.adapter = PhotoListAdapter(this@MainActivity, it.photos,this@MainActivity::onClick)
+                            adapter = PhotoListAdapter(this@MainActivity, it.photos){photo->
+                                val indexPhoto = viewModel.photos.indexOf(photo)
+                                viewModel.onClick(photo,indexPhoto)
+                            }
+                            binding.rvPhotos.adapter = adapter
                             binding.rvPhotos.isVisible = true
                             binding.tvSearch.isVisible = true
                             binding.tvSearch.text = binding.etSearch.text.toString()
@@ -73,10 +100,5 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    private fun onClick(photo: Photo){
-        val photoDetailFragment = PhotoDetailFragment(photo)
-        //photoDetailFragment.show()
     }
 }
